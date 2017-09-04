@@ -25,27 +25,30 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.delegate = self
         sceneView.showsStatistics = false
         
-        distanceText.textAlignment = .center
-        distanceText.backgroundColor = UIColor.lightText
         let screenSize: CGRect = UIScreen.main.bounds
         let screenWidth = screenSize.width
         let screenHeight = screenSize.height
-        distanceText.frame = CGRect(x: screenWidth * 0.5 - 100, y: screenHeight - 70, width: 200, height: 50)
+        let margin: CGFloat = 70.0
+        let buttonHeight: CGFloat = 50.0
+        
+        distanceText.textAlignment = .center
+        distanceText.backgroundColor = UIColor.lightText
+        distanceText.frame = CGRect(x: screenWidth * 0.5 - 100.0, y: screenHeight - margin, width: 200.0, height: buttonHeight)
         distanceText.layer.cornerRadius = 5
         distanceText.layer.borderWidth = 1
         distanceText.layer.borderColor = UIColor.black.cgColor
         distanceText.isUserInteractionEnabled = false
-        view.addSubview(distanceText)
         resetDistanceLabel()
+        view.addSubview(distanceText)
         
-        resetButton.frame = CGRect(x: screenWidth - 70, y: screenHeight - 70, width: 60, height: 50)
+        resetButton.frame = CGRect(x: screenWidth - margin, y: screenHeight - margin, width: 60.0, height: buttonHeight)
         resetButton.backgroundColor = UIColor.lightText
         resetButton.setTitle("Reset ", for: .normal)
         resetButton.addTarget(self, action: #selector(resetButtonAction), for: .touchUpInside)
         resetButton.layer.cornerRadius = 5
         resetButton.layer.borderWidth = 1
         resetButton.layer.borderColor = UIColor.black.cgColor
-        self.view.addSubview(resetButton)
+        view.addSubview(resetButton)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -89,11 +92,15 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             let lastDistance = lastNode.position.distance(vector: secondLastNode.position)
             var totalDistance: Float = 0.0
             for i in 0..<nodes.count-1 {
-                totalDistance += nodes[i].position.distance(vector: nodes[i+1].position)
+                let begin = nodes[i]
+                let end = nodes[i+1]
+                totalDistance += begin.position.distance(vector: end.position)
+                let lineNode = lineBetweenNodes(nodeA: begin, nodeB: end)
+                sceneView.scene.rootNode.addChildNode(lineNode)
             }
             distanceText.text = lastDistStr + String(format:"%.2f m", lastDistance) + "\n" +
                 totalDistStr + String(format:"%.2f m", totalDistance)
-        }
+       }
     }
     
     func resetDistanceLabel() {
@@ -106,6 +113,31 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         }
         nodes.removeAll()
         resetDistanceLabel()
+    }
+
+    func lineBetweenNodes(nodeA: SCNNode, nodeB: SCNNode) -> SCNNode {
+        let positions: [Float32] = [nodeA.position.x, nodeA.position.y, nodeA.position.z, nodeB.position.x, nodeB.position.y, nodeB.position.z]
+        let positionData = Data(bytes: positions, count: MemoryLayout<Float32>.size * positions.count)
+        let indices: [Int32] = [0, 1]
+        let indexData = Data(bytes: indices, count: MemoryLayout<Int32>.size * indices.count)
+        
+        let source = SCNGeometrySource(
+            data: positionData,
+            semantic: SCNGeometrySource.Semantic.vertex,
+            vectorCount: indices.count,
+            usesFloatComponents: true,
+            componentsPerVector: 3,
+            bytesPerComponent: MemoryLayout<Float32>.size,
+            dataOffset: 0,
+            dataStride: MemoryLayout<Float32>.size * 3)
+        let element = SCNGeometryElement(
+            data: indexData,
+            primitiveType: SCNGeometryPrimitiveType.line,
+            primitiveCount: indices.count,
+            bytesPerIndex: MemoryLayout<Int32>.size)
+        
+        let line = SCNGeometry(sources: [source], elements: [element])
+        return SCNNode(geometry: line)
     }
     
     // MARK: - ARSCNViewDelegate
@@ -121,16 +153,13 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     func session(_ session: ARSession, didFailWithError error: Error) {
         // Present an error message to the user
-        
     }
     
     func sessionWasInterrupted(_ session: ARSession) {
         // Inform the user that the session has been interrupted, for example, by presenting an overlay
-        
     }
     
     func sessionInterruptionEnded(_ session: ARSession) {
-        // Reset tracking and/or remove existing anchors if consistent tracking is required
-        
+        // Reset tracking and/or remove existing anchors if consistent tracking is required        
     }
 }
