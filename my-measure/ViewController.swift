@@ -15,7 +15,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     @IBOutlet var sceneView: ARSCNView!
     private var distanceText = UITextView()
     private let resetButton = UIButton()
-    private var nodes: [SCNNode] = []
+    private var nodes = [SCNNode]()
     
     private let lastDistStr = "Last distance: "
     private let totalDistStr = "Total distance: "
@@ -26,22 +26,17 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         sceneView.showsStatistics = false
         
         let screenSize: CGRect = UIScreen.main.bounds
-        let screenWidth = screenSize.width
-        let screenHeight = screenSize.height
-        let margin: CGFloat = 70.0
-        let buttonHeight: CGFloat = 50.0
+        positionUIElements(CGSize(width: screenSize.width, height: screenSize.height))
         
         distanceText.textAlignment = .center
         distanceText.backgroundColor = UIColor.lightText
-        distanceText.frame = CGRect(x: screenWidth * 0.5 - 100.0, y: screenHeight - margin, width: 200.0, height: buttonHeight)
         distanceText.layer.cornerRadius = 5
         distanceText.layer.borderWidth = 1
         distanceText.layer.borderColor = UIColor.black.cgColor
         distanceText.isUserInteractionEnabled = false
-        resetDistanceLabel()
+        resetDistanceLabelText()
         view.addSubview(distanceText)
         
-        resetButton.frame = CGRect(x: screenWidth - margin, y: screenHeight - margin, width: 60.0, height: buttonHeight)
         resetButton.backgroundColor = UIColor.lightText
         resetButton.setTitle("Reset ", for: .normal)
         resetButton.addTarget(self, action: #selector(resetButtonAction), for: .touchUpInside)
@@ -103,7 +98,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
        }
     }
     
-    func resetDistanceLabel() {
+    func resetDistanceLabelText() {
         distanceText.text = lastDistStr + "0.0 m\n" + totalDistStr + "0.0 m"
     }
     
@@ -112,7 +107,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             node.removeFromParentNode()
         }
         nodes.removeAll()
-        resetDistanceLabel()
+        resetDistanceLabelText()
     }
 
     func lineBetweenNodes(nodeA: SCNNode, nodeB: SCNNode) -> SCNNode {
@@ -140,6 +135,19 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         return SCNNode(geometry: line)
     }
     
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        positionUIElements(size)
+    }
+    
+    func positionUIElements(_ size: CGSize) {
+        let screenWidth = size.width
+        let screenHeight = size.height
+        let margin: CGFloat = 70.0
+        let buttonHeight: CGFloat = 50.0
+        distanceText.frame = CGRect(x: screenWidth * 0.5 - 100.0, y: screenHeight - margin, width: 200.0, height: buttonHeight)
+        resetButton.frame = CGRect(x: screenWidth - margin, y: screenHeight - margin, width: 60.0, height: buttonHeight)
+    }
+    
     // MARK: - ARSCNViewDelegate
     
 /*
@@ -160,6 +168,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     }
     
     func sessionInterruptionEnded(_ session: ARSession) {
-        // Reset tracking and/or remove existing anchors if consistent tracking is required        
+        // Reset tracking and/or remove existing anchors if consistent tracking is required
     }
 }
